@@ -150,12 +150,12 @@ ods_pbta_hgg <- OutriderDataSet(countData=gene_count_pbta_hgg, colData=histology
 ods_gtex_pnoc008 <- OutriderDataSet(countData=gene_count_gtex_pnoc008, colData=histology_gtex_pnoc008)
 
 # generate a list so that we can avoid duplicating codes 
-# ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
-# name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
+ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
+name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
 
-# for now just use PBTA HGG run as an example
-ods_list <- list(ods_pbta_hgg)
-name_list <- list("ods_pbta_hgg")
+# # for now just use PBTA HGG run as an example
+# ods_list <- list(ods_pbta_hgg)
+# name_list <- list("ods_pbta_hgg")
 
 ############# calculate FPKM values, label not expressed genes and save plots as QC 
 for(i in 1:length(name_list)){
