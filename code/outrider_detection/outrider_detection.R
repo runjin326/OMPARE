@@ -1,7 +1,7 @@
 
 # Detect Outliers using OUTRIDER [@doi:10.1016/j.ajhg.2018.10.025]
-# BiocManager::install("OUTRIDER")
-# BiocManager::install("RMariaDB")
+BiocManager::install("OUTRIDER")
+BiocManager::install("RMariaDB")
 suppressPackageStartupMessages({
   library(optparse)
   library(readr)
@@ -65,12 +65,20 @@ clinical_pnoc008 <- readRDS(file.path(data_dir, "pnoc008_clinical.rds"))
 
 ########## load txdb for generating steps 
 annotation_file <- file.path(ref_dir, "ucsc.knownGenes.db")
+mapping_file <- file.path(ref_dir, "mapping_tx_genesymbol.tsv")
 
-con <- dbConnect(MariaDB(), host='genome-mysql.cse.ucsc.edu',
-                 dbname="hg19", user='genome')
-map <- dbGetQuery(con, 'select kgId AS TXNAME, geneSymbol from kgXref')
-dbDisconnect(con)
-
+if (!file.exists(mapping_file)) {
+  # establish connection
+  con <- dbConnect(MariaDB(), host='genome-mysql.soe.ucsc.edu',
+                   dbname="hg19", user='genome')
+  map <- dbGetQuery(con, 'select kgId AS TXNAME, geneSymbol from kgXref')
+  # save it so that we do not need to reconnect every time
+  readr::write_tsv(map, mapping_file)
+  dbDisconnect(con)
+} else {
+  map <- readr::read_tsv(mapping_file)
+}
+  
 if (!file.exists(annotation_file)) {
   # Define the annotations for the hg38 genome
   txdbUrl <- paste0("https://cmm.in.tum.de/public/",
@@ -149,13 +157,13 @@ ods_pbta_hgg <- OutriderDataSet(countData=gene_count_pbta_hgg, colData=histology
 # generate GTEx PNOC008
 ods_gtex_pnoc008 <- OutriderDataSet(countData=gene_count_gtex_pnoc008, colData=histology_gtex_pnoc008)
 
-# generate a list so that we can avoid duplicating codes 
-ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
-name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
+# # generate a list so that we can avoid duplicating codes 
+# ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
+# name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
 
-# # for now just use PBTA HGG run as an example
-# ods_list <- list(ods_pbta_hgg)
-# name_list <- list("ods_pbta_hgg")
+# for now just use PBTA HGG run as an example
+ods_list <- list(ods_pbta_hgg)
+name_list <- list("ods_pbta_hgg")
 
 ############# calculate FPKM values, label not expressed genes and save plots as QC 
 for(i in 1:length(name_list)){
@@ -186,7 +194,7 @@ for(i in 1:length(name_list)){
 
 ############# Estimate Size Factors, find encoding dim (q) and do confounding correction
 # Define multicore for parallel processing
-ncores <- 5
+ncores <- 16
 register(MulticoreParam(ncores, ncores*2, progressbar = TRUE))
 
 ods_list <- lapply(ods_list, function(x){
