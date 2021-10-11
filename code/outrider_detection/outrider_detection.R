@@ -62,6 +62,7 @@ patients_of_interest<-c("PNOC008-33", "PNOC008-30", "PNOC008-27", "PNOC008-19")
 histology <- readr::read_tsv(file.path(data_dir, "pedcan_histologies.tsv"), guess_max = 100000)
 gene_count <- readRDS(file.path(data_dir, "gene-counts-rsem-expected_count-collapsed.rds"))
 clinical_pnoc008 <- readRDS(file.path(data_dir, "pnoc008_clinical.rds"))
+gtf <- file.path(ref_dir, "gencode.v27.primary_assembly.annotation.gtf.gz")
 
 ########## load txdb for generating steps 
 annotation_file <- file.path(ref_dir, "ucsc.knownGenes.db")
@@ -130,21 +131,33 @@ histology_gtex_pnoc008 <- bind_rows(histology_gtex, clinical_pnoc008_df)  %>%
   # define sampleID for ods assembly step
   dplyr::rename(sampleID=Kids_First_Biospecimen_ID)
 
+################ filter the gene count data to contain only protein coding genes
+# read gtf and filter to protein coding 
+gencode_gtf <- rtracklayer::import(con = gtf)
+gencode_gtf <- as.data.frame(gencode_gtf)
+gencode_gtf <- gencode_gtf %>%
+  dplyr::select(gene_id, gene_name, gene_type) %>%
+  filter(gene_type == "protein_coding") %>%
+  unique()
+
+# filter expression count file to contain only protein coding gene
+gene_count_coding <- gene_count[rownames(gene_count) %in% gencode_gtf$gene_name,]
+
 ################ Subset gene counts data to samples of interest  
 # select sample of interest 
-gene_count_pbta <- gene_count %>% 
+gene_count_pbta <- gene_count_coding %>% 
   dplyr::select(histology_pbta$sampleID)
 #change to integer for next step
 gene_count_pbta[] <- lapply(gene_count_pbta, as.integer) 
 
 # select sample of interest 
-gene_count_pbta_hgg <- gene_count %>% 
+gene_count_pbta_hgg <- gene_count_coding %>% 
   dplyr::select(histology_pbta_hgg$sampleID)
 #change to integer for next step
 gene_count_pbta_hgg[] <- lapply(gene_count_pbta_hgg, as.integer) 
 
 # select sample of interest 
-gene_count_gtex_pnoc008 <- gene_count %>% 
+gene_count_gtex_pnoc008 <- gene_count_coding %>% 
   dplyr::select(histology_gtex_pnoc008$sampleID)
 #change to integer for next  step
 gene_count_gtex_pnoc008[] <- lapply(gene_count_gtex_pnoc008, as.integer) 
@@ -157,13 +170,13 @@ ods_pbta_hgg <- OutriderDataSet(countData=gene_count_pbta_hgg, colData=histology
 # generate GTEx PNOC008
 ods_gtex_pnoc008 <- OutriderDataSet(countData=gene_count_gtex_pnoc008, colData=histology_gtex_pnoc008)
 
-# # generate a list so that we can avoid duplicating codes 
-# ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
-# name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
+# generate a list so that we can avoid duplicating codes
+ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
+name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
 
-# for now just use PBTA HGG run as an example
-ods_list <- list(ods_pbta_hgg)
-name_list <- list("ods_pbta_hgg")
+# # for now just use PBTA HGG run as an example
+# ods_list <- list(ods_pbta_hgg)
+# name_list <- list("ods_pbta_hgg")
 
 ############# calculate FPKM values, label not expressed genes and save plots as QC 
 for(i in 1:length(name_list)){
@@ -200,13 +213,13 @@ register(MulticoreParam(ncores, ncores*2, progressbar = TRUE))
 ods_list <- lapply(ods_list, function(x){
   x<- estimateSizeFactors(x)
   print("finish estimating size")
-  # get encoding dim
-  x <- findEncodingDim(x, BPPARAM=bpparam())
-  # save hyper parameter plots
-  file_name_hyper <- paste0(name_list[[i]],'_hyper_parameter.pdf')
-  pdf(file.path(hyper_parameter_dir, file_name_hyper), width=6, height=6)
-  plotEncDimSearch(x)
-  dev.off()
+  # # get encoding dim
+  # x <- findEncodingDim(x, BPPARAM=bpparam())
+  # # save hyper parameter plots
+  # file_name_hyper <- paste0(name_list[[i]],'_hyper_parameter.pdf')
+  # pdf(file.path(hyper_parameter_dir, file_name_hyper), width=6, height=6)
+  # plotEncDimSearch(x)
+  # dev.off()
   # model with confounding factors
   x <- controlForConfounders(x, BPPARAM=bpparam())
 })
