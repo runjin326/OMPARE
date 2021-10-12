@@ -207,7 +207,7 @@ for(i in 1:length(name_list)){
 
 ############# Estimate Size Factors, find encoding dim (q) and do confounding correction
 # Define multicore for parallel processing
-ncores <- 16
+ncores <- 32
 register(MulticoreParam(ncores, ncores*2, progressbar = TRUE))
 
 ods_list <- lapply(ods_list, function(x){
