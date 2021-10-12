@@ -59,7 +59,7 @@ plotting_group <- c("harmonized_diagnosis", "RNA_library", "tumor_descriptor", "
 patients_of_interest<-c("PNOC008-33", "PNOC008-30", "PNOC008-27", "PNOC008-19")
 
 # Read in files necessary for analyses
-histology <- readr::read_tsv(file.path(data_dir, "pedcan_histologies.tsv"), guess_max = 100000)
+histology <- readr::read_tsv(file.path(data_dir, "histologies.tsv"), guess_max = 100000)
 gene_count <- readRDS(file.path(data_dir, "gene-counts-rsem-expected_count-collapsed.rds"))
 clinical_pnoc008 <- readRDS(file.path(data_dir, "pnoc008_clinical.rds"))
 gtf <- file.path(ref_dir, "gencode.v27.primary_assembly.annotation.gtf.gz")
@@ -68,17 +68,17 @@ gtf <- file.path(ref_dir, "gencode.v27.primary_assembly.annotation.gtf.gz")
 annotation_file <- file.path(ref_dir, "ucsc.knownGenes.db")
 mapping_file <- file.path(ref_dir, "mapping_tx_genesymbol.tsv")
 
-if (!file.exists(mapping_file)) {
-  # establish connection
+# if (!file.exists(mapping_file)) {
+#   # establish connection
   con <- dbConnect(MariaDB(), host='genome-mysql.soe.ucsc.edu',
                    dbname="hg19", user='genome')
   map <- dbGetQuery(con, 'select kgId AS TXNAME, geneSymbol from kgXref')
   # save it so that we do not need to reconnect every time
-  readr::write_tsv(map, mapping_file)
+#   readr::write_tsv(map, mapping_file)
   dbDisconnect(con)
-} else {
-  map <- readr::read_tsv(mapping_file)
-}
+# } else {
+#   map <- readr::read_tsv(mapping_file)
+# }
   
 if (!file.exists(annotation_file)) {
   # Define the annotations for the hg38 genome
