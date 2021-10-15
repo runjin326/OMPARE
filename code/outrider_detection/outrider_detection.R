@@ -53,7 +53,7 @@ if(!dir.exists(hyper_parameter_dir)){
 }
   
 # Define key parameters
-confounding_factors <- c("harmonized_diagnosis", "RNA_library", "tumor_descriptor", "primary_site")
+confounding_factors <- c("harmonized_diagnosis", "RNA_library", "tumor_descriptor", "CNS_region")
 plotting_group <- c("harmonized_diagnosis", "RNA_library", "tumor_descriptor", "CNS_region")
 
 patients_of_interest<-c("PNOC008-33", "PNOC008-30", "PNOC008-27", "PNOC008-19")
