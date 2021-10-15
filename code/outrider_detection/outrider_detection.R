@@ -171,12 +171,12 @@ ods_pbta_hgg <- OutriderDataSet(countData=gene_count_pbta_hgg, colData=histology
 ods_gtex_pnoc008 <- OutriderDataSet(countData=gene_count_gtex_pnoc008, colData=histology_gtex_pnoc008)
 
 # generate a list so that we can avoid duplicating codes
-ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
-name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
+# ods_list <- list(ods_pbta, ods_pbta_hgg, ods_gtex_pnoc008)
+# name_list <- list("ods_pbta", "ods_pbta_hgg", "ods_gtex_pnoc008")
 
 # # for now just use PBTA HGG run as an example
-# ods_list <- list(ods_pbta_hgg)
-# name_list <- list("ods_pbta_hgg")
+ods_list <- list(ods_pbta_hgg)
+name_list <- list("ods_pbta_hgg")
 
 ############# calculate FPKM values, label not expressed genes and save plots as QC 
 for(i in 1:length(name_list)){
@@ -221,7 +221,9 @@ ods_list <- lapply(ods_list, function(x){
   # plotEncDimSearch(x)
   # dev.off()
   # model with confounding factors
-  x <- controlForConfounders(x, BPPARAM=bpparam())
+  x <- controlForConfounders(x, 
+                             BPPARAM=bpparam(), 
+                             iterations=1)
 })
 
 # plot correlation heatmap after confouding factors corrected
@@ -245,6 +247,7 @@ ods_list <- lapply(ods_list, function(x){
   x <- computePvalues(x, alternative="two.sided", method="BY")
   x <- computeZscores(x)
 })
+
 
 ############# Extract results from the table
 
