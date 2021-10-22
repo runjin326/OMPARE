@@ -23,9 +23,9 @@ if(!dir.exists(plots_dir)){
   dir.create(plots_dir)
 }
 
-results_dir <- file.path(analysis_dir, "results")
+results_dir <- file.path(analysis_dir, "results", "outrider_results")
 if(!dir.exists(results_dir)){
-  dir.create(results_dir)
+  dir.create(results_dir, recursive = TRUE)
 }
 
 # output directory for FPKM Filter QC plots
@@ -250,7 +250,6 @@ ods_list <- lapply(ods_list, function(x){
 
 
 ############# Extract results from the table
-
 for(i in 1:length(name_list)){
   ods <- ods_list[[i]]
   # plot count correlation AFTER the confounder correction
