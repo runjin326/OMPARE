@@ -40,10 +40,9 @@ Prerequisites
 
 * Copy Number: 
 
-  * ``{uuid}.CNVs.p.value.txt``
-  * ``{uuid}.controlfreec.info.txt``
-  * ``{uuid}.controlfreec.ratio.txt``
+  * ``{uuid}.controlfreec.info.txt`` (for purity and ploidy)
   * ``{uuid}.gainloss.txt``
+  * ``{uuid}.diagram.pdf``
 
 * Expression:
 
@@ -63,24 +62,20 @@ Prerequisites
 
   * ``{uuid}.gatk.PASS.vcf.gz.hg38_multianno.txt.gz``
 
-5. Download the following clinical and sample information files and add data manually to ``data/manifest/manifest.xlsx`` 
+5. Download the following clinical information files and add data manually to ``data/manifest/manifest.xlsx`` 
    
 * Files from `Kids First DRC <https://data-tracker.kidsfirstdrc.org/study/SD_8Y99QZJJ/documents>`_
 
-  * PNOC008 Clinical Manifest
-  * PNOC008 Sample Manifest
+  * PNOC008 Clinical Manifest (needed to map ``Research ID`` to ADAPT ``cohort_participant_id``)
 
-* Files from ADAPT (this part has been automated using ``code/update_pbta_histology.R``): 
-  
-  * pbta-histologies-base-adapt.tsv
-
-Detailed instructions are given in `d3b-analysis-toolkit <https://github.com/d3b-center/d3b-analysis-toolkit>`_
+* Files from ADAPT (updated each morning and needed to get BS identifier and other information)
 
 .. code-block:: bash
 
-	cd /path-to/d3b-analysis-toolkit/scripts
-	source .envrc
-	python select-all-pbta-histologies.py -o /path-to/OMPARE/data/pbta/pbta-histologies-base-adapt.tsv 
+	aws s3 --profile saml cp s3://d3b-bix-dev-data-bucket/pbta-histologies-base-adapt.tsv data/pbta/
+
+Note: None of these files have information on short_histology or broad_histology so currently it is being hard-coded ``HGAT`` and ``Diffuse astrocytic and oligodendroglial tumor``, respectively.
+
 
 Scripts
 =======
@@ -92,11 +87,10 @@ Master script
    
 1. **code/create_project_dir.R**: create project directory and organize files.
 2. **code/create_clinfile.R**: create clinical file for patient of interest.
-3. **code/update_pbta_histology.R**: pull pbta histologies data from datawarehouse
-4. **code/update_pnoc008_matrices.R**: update PNOC008 data matrices (cnv, mutations, fusions, expression) with each new patient.
-5. **OMPARE.Rmd**: run html reports
-6. Using ``aws s3 sync``, sync back updated data folder to ``s3://d3b-bix-dev-data-bucket/PNOC008/reference``
-7. **upload_reports.R**: upload reports and output folders to PNOC008 data delivery project on cavatica.
+3. **code/update_pnoc008_matrices.R**: update PNOC008 data matrices (cnv, mutations, fusions, expression) with each new patient.
+4. **OMPARE.Rmd**: run html reports
+5. Using ``aws s3 sync``, sync back updated data folder to ``s3://d3b-bix-dev-data-bucket/PNOC008/reference``
+6. **upload_reports.R**: upload reports and output folders to PNOC008 data delivery project on cavatica.
 
 .. code-block:: bash
 	
@@ -104,14 +98,11 @@ Master script
 	--patient=PATIENT
 		Patient identifier (PNOC008-22, C3342894...)
 
-	--sourcedir=SOURCEDIR
-		Source directory with all files (usually downloads folder on local machine)
+	--source_dir=SOURCE_DIR
+		Source directory with all files
 
 	--clin_file=CLIN_FILE
 		Manifest file (.xlsx)
-
-	--update_pbta=UPDATE_PBTA
-		Update PBTA adapt file (TRUE or FALSE)
 
 	--sync_data=SYNC_DATA
 		Sync reference data to s3 (TRUE or FALSE)
@@ -127,7 +118,6 @@ Master script
 	--patient PNOC008-40 \
 	--sourcedir ~/Downloads/p40 \
 	--clin_file data/manifest/pnoc008_manifest.xlsx \
-	--update_pbta FALSE \
 	--sync_data TRUE \
 	--upload_reports FALSE \
 	--study PNOC008
@@ -188,9 +178,7 @@ NOTE: The above steps will create a directory structure for the patient of inter
 	├── clinical
 	│   └── patient_report.txt
 	├── copy-number-variations
-	│   ├── {uuid}.controlfreec.CNVs.p.value.txt
 	│   ├── {uuid}.controlfreec.info.txt
-	│   ├── {uuid}.controlfreec.ratio.txt
 	│   ├── {uuid}.diagram.pdf	
 	│   └── {uuid}.gainloss.txt
 	├── gene-expressions
@@ -238,12 +226,10 @@ Generate markdown report:
 .. code-block:: bash
 
 	# patient_dir is the project directory of current patient
-	# fusion_method is the fusion method. Allowed values: star, arriba, both or not specified. (Optional) 
 	# set_title is the title for the report. (Optional)
 	# snv_pattern is one of the six values for simple variants: lancet, mutect2, strelka2, vardict, consensus, all (all four callers together)
 	Rscript -e "rmarkdown::render(input = 'OMPARE.Rmd', 
 	params = list(patient_dir = patient_dir,
-			fusion_method = fusion_method,
 			set_title = set_title,
 			snv_caller = snv_caller), 
 			output_dir = output_dir, 
